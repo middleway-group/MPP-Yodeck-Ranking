@@ -1,0 +1,14 @@
+{
+  "name": "mpp-yodeck-board",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Genere une page classement Mon Petit Prono brandee MiddleWay, publiee sur GitHub Pages et affichee par un player Yodeck.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "node src/build.mjs",
+    "build:mock": "MPP_MOCK=1 node src/build.mjs"
+  }
+}

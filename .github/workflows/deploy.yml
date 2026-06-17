@@ -1,0 +1,68 @@
+name: Classement MPP -> Pages
+
+on:
+  schedule:
+    - cron: "0 * * * *"        # toutes les heures (UTC, best-effort)
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build de la page classement
+        env:
+          # --- secrets ---
+          MPP_REFRESH_TOKEN: ${{ secrets.MPP_REFRESH_TOKEN }}
+          # --- variables (non sensibles) ---
+          MPP_CHALLENGE_ID: ${{ vars.MPP_CHALLENGE_ID }}     # ex: mpp_challenge_UD61EVJZ
+          MPP_LEAGUE_NAME: ${{ vars.MPP_LEAGUE_NAME }}
+          MPP_ROWS_PER_PAGE: ${{ vars.MPP_ROWS_PER_PAGE }}
+          # surcharges optionnelles :
+          MPP_CLIENT_ID: ${{ vars.MPP_CLIENT_ID }}
+          MPP_API_BASE: ${{ vars.MPP_API_BASE }}
+          MPP_TOKEN_URL: ${{ vars.MPP_TOKEN_URL }}
+          # si rotation des refresh tokens : on capte le nouveau token ici
+          MPP_REFRESH_OUT: new_refresh_token.txt
+        run: node src/build.mjs
+
+      # --- OPTIONNEL : uniquement si la rotation des refresh tokens est active ---
+      # Repousse le refresh token renouvele dans le secret. Necessite un PAT
+      # (fine-grained, droit "Secrets: read/write" sur ce repo) stocke en secret GH_PAT.
+      - name: Persister le refresh token renouvele
+        if: ${{ hashFiles('new_refresh_token.txt') != '' }}
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+        run: |
+          gh secret set MPP_REFRESH_TOKEN --body "$(cat new_refresh_token.txt)"
+          echo "Refresh token mis a jour dans les secrets."
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
