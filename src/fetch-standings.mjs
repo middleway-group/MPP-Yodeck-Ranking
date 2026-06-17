@@ -54,14 +54,29 @@ function extractEntriesArray(data) {
 
 function normalizeEntry(raw, index) {
   const user = raw?.user || raw?.profile || {};
+  const ranking = raw?.ranking || {};
+
   const name =
+    user.firstName ||
+    user.username ||
+    pick(user, ["nickname", "name", "pseudo", "displayName"]) ||
     pick(raw, ["nickname", "name", "username", "pseudo", "displayName", "userName", "login"]) ||
-    pick(user, ["nickname", "name", "username", "pseudo", "displayName"]) ||
     `Joueur ${index + 1}`;
+
   const points = Number(
-    pick(raw, ["points", "score", "total", "totalPoints", "pts", "totalScore", "value"]) ?? 0
+    ranking.points ??
+    pick(raw, ["points", "score", "total", "totalPoints", "pts", "totalScore", "value"]) ??
+    0
   );
-  const rank = Number(pick(raw, ["rank", "position", "ranking", "place", "standing"]) ?? index + 1);
+  const rank = Number(
+    ranking.rank ??
+    pick(raw, ["rank", "position", "place", "standing"]) ??
+    index + 1
+  );
+
+  const goodForecasts = Number(ranking.goodForecasts ?? 0);
+  const exactForecasts = Number(ranking.exactForecasts ?? 0);
+  const calculatedForecasts = Number(ranking.calculatedForecasts ?? 0);
 
   // tendance : champ direct, ou calcul depuis le rang precedent si fourni
   let trend = 0;
@@ -70,7 +85,7 @@ function normalizeEntry(raw, index) {
   if (typeof trendRaw === "number") trend = trendRaw;
   else if (prev != null) trend = Number(prev) - rank;
 
-  return { rank, name: String(name), points, trend };
+  return { rank, name: String(name), points, trend, goodForecasts, exactForecasts, calculatedForecasts };
 }
 
 function normalizeStandings(arr) {
