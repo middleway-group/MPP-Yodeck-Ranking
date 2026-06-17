@@ -1,4 +1,4 @@
-name: Classement MPP -> Pages
+name: Classement MPP -> Azure Static Web Apps
 
 on:
   schedule:
@@ -9,15 +9,13 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: deploy-mpp           # serialise les runs (evite une course sur le refresh token)
   cancel-in-progress: false
 
 jobs:
-  build:
+  build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +25,7 @@ jobs:
 
       - name: Build de la page classement
         env:
-          # --- secrets ---
+          # --- secret ---
           MPP_REFRESH_TOKEN: ${{ secrets.MPP_REFRESH_TOKEN }}
           # --- variables (non sensibles) ---
           MPP_CHALLENGE_ID: ${{ vars.MPP_CHALLENGE_ID }}     # ex: mpp_challenge_UD61EVJZ
@@ -37,15 +35,15 @@ jobs:
           MPP_CLIENT_ID: ${{ vars.MPP_CLIENT_ID }}
           MPP_API_BASE: ${{ vars.MPP_API_BASE }}
           MPP_TOKEN_URL: ${{ vars.MPP_TOKEN_URL }}
-          # si rotation des refresh tokens : on capte le nouveau token ici
+          # rotation : on capte le refresh token renouvele ici
           MPP_REFRESH_OUT: new_refresh_token.txt
         run: node src/build.mjs
 
-      # --- OPTIONNEL : uniquement si la rotation des refresh tokens est active ---
-      # Repousse le refresh token renouvele dans le secret. Necessite un PAT
-      # (fine-grained, droit "Secrets: read/write" sur ce repo) stocke en secret GH_PAT.
+      # REQUIS (rotation active) : repousse le refresh token renouvele dans le secret.
+      # always() => s'execute meme si le build echoue APRES le refresh, sinon le
+      # token tourne serait perdu et le run suivant casserait. Necessite GH_PAT.
       - name: Persister le refresh token renouvele
-        if: ${{ hashFiles('new_refresh_token.txt') != '' }}
+        if: ${{ always() && hashFiles('new_refresh_token.txt') != '' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
@@ -53,16 +51,14 @@ jobs:
           gh secret set MPP_REFRESH_TOKEN --body "$(cat new_refresh_token.txt)"
           echo "Refresh token mis a jour dans les secrets."
 
-      - uses: actions/upload-pages-artifact@v3
+      # Ne deploie que si le build a reussi (sinon le dernier site valide reste en ligne).
+      - name: Deploiement Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
         with:
-          path: dist
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: dist          # contenu deja construit
+          output_location: ""
+          skip_app_build: true        # pas de build Oryx, on uploade tel quel
+          skip_api_build: true
