@@ -79,6 +79,7 @@ ${metaRefresh}
   .p-info{text-align:center;padding:0 .4vw 1vh;width:100%}
   .p-icon{font-size:4vh;display:block;margin-bottom:.6vh;line-height:1}
   .p-name{font-size:2.1vh;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
+  .fn{font-weight:500;color:var(--muted);font-size:.78em}
   .p-score{font-size:2.3vh;font-weight:900;margin-top:.4vh}
   .p-block{width:100%;border-radius:.6vh .6vh 0 0;display:flex;align-items:center;justify-content:center}
   .p-num{font-size:6.4vh;font-weight:900;line-height:1}
@@ -159,6 +160,14 @@ ${metaRefresh}
 
   function escH(s){return String(s).replace(/[&<>"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c];});}
   function fmt(n){return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,"&nbsp;");}
+  // surnom en principal, prenom entre parentheses (si present et different du surnom)
+  function displayName(e){
+    var s=escH(e.name||"");
+    var f=e.firstName?String(e.firstName).trim():"";
+    if(f&&f.toLowerCase()!==String(e.name||"").toLowerCase())
+      s+=' <span class="fn">('+escH(f)+')</span>';
+    return s;
+  }
 
   var top3=all.slice(0,3);
   var bottom3=all.length>=6?all.slice(-3):[];
@@ -173,7 +182,7 @@ ${metaRefresh}
     return '<div class="slot '+o.sc+'">'
       +'<div class="p-info">'
       +'<span class="p-icon">'+o.ic+'</span>'
-      +'<div class="p-name">'+escH(o.e.name)+'</div>'
+      +'<div class="p-name">'+displayName(o.e)+'</div>'
       +'<div class="p-score">'+fmt(o.e.points)+'&nbsp;pts</div>'
       +'</div>'
       +'<div class="p-block"><span class="p-num">'+o.e.rank+'</span></div>'
@@ -185,7 +194,7 @@ ${metaRefresh}
     return '<div class="fcard c'+(i+1)+'" style="animation-delay:'+(i*0.12).toFixed(2)+'s">'
       +'<span class="f-ic">'+r.ic+'</span>'
       +'<div class="f-body">'
-      +'<div class="f-name">'+escH(e.name)+'<span class="f-rank">'+e.rank+'e</span></div>'
+      +'<div class="f-name">'+displayName(e)+'<span class="f-rank">'+e.rank+'e</span></div>'
       +'<div class="f-quote">'+escH(r.q)+'</div>'
       +'</div>'
       +'<div class="f-pts"><div class="f-val">'+fmt(e.points)+'</div><div class="f-unit">pts</div></div>'

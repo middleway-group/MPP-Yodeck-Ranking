@@ -56,12 +56,15 @@ function normalizeEntry(raw, index) {
   const user = raw?.user || raw?.profile || {};
   const ranking = raw?.ranking || {};
 
-  const name =
-    user.firstName ||
+  // surnom (pseudo) affiche en principal ; prenom affiche entre parentheses
+  const surnom =
     user.username ||
-    pick(user, ["nickname", "name", "pseudo", "displayName"]) ||
-    pick(raw, ["nickname", "name", "username", "pseudo", "displayName", "userName", "login"]) ||
+    pick(user, ["nickname", "pseudo", "displayName", "name"]) ||
+    pick(raw, ["username", "nickname", "pseudo", "displayName", "name", "userName", "login"]) ||
+    user.firstName ||
     `Joueur ${index + 1}`;
+  const firstName = user.firstName || pick(user, ["firstname", "prenom"]) || "";
+  const name = String(surnom);
 
   const points = Number(
     ranking.points ??
@@ -85,7 +88,7 @@ function normalizeEntry(raw, index) {
   if (typeof trendRaw === "number") trend = trendRaw;
   else if (prev != null) trend = Number(prev) - rank;
 
-  return { rank, name: String(name), points, trend, goodForecasts, exactForecasts, calculatedForecasts };
+  return { rank, name, firstName: String(firstName), points, trend, goodForecasts, exactForecasts, calculatedForecasts };
 }
 
 function normalizeStandings(arr) {
