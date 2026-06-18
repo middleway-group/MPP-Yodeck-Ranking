@@ -1,14 +1,27 @@
 name: Classement MPP -> Azure Static Web Apps
 
+# ============================================================================
+# CUTOFF : date d'arret automatique du pipeline (format AAAA-MM-JJ, en UTC).
+# A partir de cette date (incluse), le job se desactive tout seul.
+# >>> Pour prolonger/raccourcir : changer UNIQUEMENT cette valeur. <<<
+# ============================================================================
+env:
+  CUTOFF: "2026-08-01"
+
 on:
   schedule:
-    - cron: "0 * * * *"        # toutes les heures (UTC, best-effort)
+    # Heures de bureau France, lundi -> vendredi.
+    # ATTENTION : le cron GitHub est en UTC. "0 7-18 * * 1-5" correspond a
+    # ~8h-19h Paris en hiver (UTC+1) et ~9h-20h en ete (UTC+2). Le passage
+    # heure d'hiver/ete n'est PAS gere par le cron (decalage assume).
+    - cron: "0 7-18 * * 1-5"
   workflow_dispatch:
   push:
     branches: [main]
 
 permissions:
   contents: read
+  actions: write              # requis pour `gh workflow disable` (arret auto)
 
 concurrency:
   group: deploy-mpp           # serialise les runs (evite une course sur le refresh token)
@@ -18,12 +31,43 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
+      # --- Garde : arret automatique a partir du CUTOFF -------------------
+      # Compare la date du jour (UTC) a CUTOFF. Si on a atteint/depasse le
+      # cutoff : desactive le workflow lui-meme et positionne stop=true.
+      # La sortie reste PROPRE (pas d'echec rouge) : les etapes suivantes
+      # sont simplement court-circuitees via `if: steps.guard.outputs.stop`.
+      - name: Garde anti-cutoff (arret auto)
+        id: guard
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          TODAY="$(date -u +%F)"
+          echo "Date du jour (UTC) : $TODAY  |  CUTOFF : $CUTOFF"
+          # Les dates ISO (AAAA-MM-JJ) se comparent correctement en ordre lexical.
+          if [[ ! "$TODAY" < "$CUTOFF" ]]; then
+            echo "::warning::Date du jour ($TODAY) >= CUTOFF ($CUTOFF) : arret automatique du pipeline."
+            echo "stop=true" >> "$GITHUB_OUTPUT"
+            if gh workflow disable deploy.yml; then
+              echo "Workflow 'deploy.yml' desactive avec succes. Plus aucun run programme ne partira."
+            else
+              echo "::error::Echec de 'gh workflow disable'. Le GITHUB_TOKEN n'a probablement pas la permission Actions: write (reglage d'org)."
+              echo "::error::ACTION REQUISE : etendre le secret GH_PAT a la permission Actions: write, puis relancer (ou desactiver le workflow a la main)."
+            fi
+          else
+            echo "Avant CUTOFF : execution normale."
+            echo "stop=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.guard.outputs.stop != 'true'
       - uses: actions/setup-node@v4
+        if: steps.guard.outputs.stop != 'true'
         with:
           node-version: 20
 
       - name: Build de la page classement
+        if: steps.guard.outputs.stop != 'true'
         env:
           # --- secret ---
           MPP_REFRESH_TOKEN: ${{ secrets.MPP_REFRESH_TOKEN }}
@@ -43,7 +87,7 @@ jobs:
       # always() => s'execute meme si le build echoue APRES le refresh, sinon le
       # token tourne serait perdu et le run suivant casserait. Necessite GH_PAT.
       - name: Persister le refresh token renouvele
-        if: ${{ always() && hashFiles('new_refresh_token.txt') != '' }}
+        if: ${{ steps.guard.outputs.stop != 'true' && always() && hashFiles('new_refresh_token.txt') != '' }}
         continue-on-error: true
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
@@ -53,6 +97,7 @@ jobs:
 
       # Ne deploie que si le build a reussi (sinon le dernier site valide reste en ligne).
       - name: Deploiement Azure Static Web Apps
+        if: steps.guard.outputs.stop != 'true'
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
