@@ -78,6 +78,9 @@ ${metaRefresh}
   .slot{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;max-width:30%;height:100%}
   .p-info{text-align:center;padding:0 .4vw 1vh;width:100%}
   .p-icon{font-size:4vh;display:block;margin-bottom:.6vh;line-height:1}
+  /* Icones en SVG inline (et non en emoji) : les players Yodeck n'embarquent
+     pas de police emoji -> les emoji s'affichaient en rectangles "tofu". */
+  .ico{width:1em;height:1em;display:inline-block;vertical-align:-.12em;fill:currentColor}
   .p-name{font-size:2.1vh;font-weight:700;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%}
   .fn{font-weight:500;color:var(--muted);font-size:.78em}
   .p-score{font-size:2.3vh;font-weight:900;margin-top:.4vh}
@@ -155,10 +158,29 @@ ${metaRefresh}
   var board=document.getElementById("board");
   var countEl=document.getElementById("count");
 
+  // Icones SVG inline (currentColor) — independantes de toute police emoji.
+  var ICO={
+    medal:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+      +'<path d="M7.5 2.5 11 9M16.5 2.5 13 9" stroke="currentColor" stroke-width="2.4" fill="none" stroke-linecap="round"/>'
+      +'<circle cx="12" cy="15.5" r="6.6" fill="currentColor"/>'
+      +'<polygon points="12,11.9 12.88,14.29 15.42,14.39 13.43,15.96 14.12,18.41 12,17 9.88,18.41 10.57,15.96 8.58,14.39 11.12,14.29" fill="#020735"/>'
+      +'</svg>',
+    flame:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+      +'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" fill="currentColor"/>'
+      +'</svg>',
+    ghost:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+      +'<path d="M12 2a8 8 0 0 0-8 8v12l3-3 2.5 2.5L12 19l2.5 2.5L17 19l3 3V10a8 8 0 0 0-8-8z" fill="currentColor"/>'
+      +'<circle cx="9.2" cy="10" r="1.1" fill="#020735"/><circle cx="14.8" cy="10" r="1.1" fill="#020735"/>'
+      +'</svg>',
+    down:'<svg class="ico" viewBox="0 0 24 24" aria-hidden="true" focusable="false">'
+      +'<path d="M22 17 13.5 8.5 8.5 13.5 2 7M16 17h6v-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+      +'</svg>'
+  };
+
   var ROAST=[
-    {q:"Encore un effort, champion !",ic:"&#128123;"},
-    {q:"Maillot jaune… mais inversé",ic:"&#128200;"},
-    {q:"Spécialiste du hasard",ic:"&#128293;"}
+    {q:"Encore un effort, champion !",ic:ICO.ghost},
+    {q:"Maillot jaune… mais inversé",ic:ICO.down},
+    {q:"Spécialiste du hasard",ic:ICO.flame}
   ];
 
   function escH(s){return String(s).replace(/[&<>"]/g,function(c){return({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c];});}
@@ -176,9 +198,9 @@ ${metaRefresh}
   var bottom3=all.length>=6?all.slice(-3):[];
 
   var podOrder=[
-    {e:top3[0],sc:"s1",ic:"&#129351;"},
-    {e:top3[1],sc:"s2",ic:"&#129352;"},
-    {e:top3[2],sc:"s3",ic:"&#129353;"}
+    {e:top3[0],sc:"s1",ic:ICO.medal},
+    {e:top3[1],sc:"s2",ic:ICO.medal},
+    {e:top3[2],sc:"s3",ic:ICO.medal}
   ].filter(function(o){return !!o.e;});
 
   var podHtml=podOrder.map(function(o){
@@ -206,13 +228,13 @@ ${metaRefresh}
 
   board.innerHTML=
     '<section>'
-    +'<div class="sec-title" style="color:var(--cyan)">&#129351; Podium</div>'
+    +'<div class="sec-title" style="color:var(--cyan)">'+ICO.medal+' Podium</div>'
     +'<div class="podium">'+podHtml+'</div>'
     +'<div class="ground"></div>'
     +'</section>'
     +(bottom3.length
       ?'<section>'
-        +'<div class="sec-title" style="color:var(--coral)">&#128293; Hall of Flame</div>'
+        +'<div class="sec-title" style="color:var(--coral)">'+ICO.flame+' Hall of Flame</div>'
         +'<div class="flames">'+flameHtml+'</div>'
         +'</section>'
       :"");
