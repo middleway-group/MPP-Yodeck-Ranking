@@ -10,11 +10,12 @@ env:
 
 on:
   schedule:
-    # Heures de bureau France, lundi -> vendredi.
-    # ATTENTION : le cron GitHub est en UTC. "0 7-18 * * 1-5" correspond a
-    # ~8h-19h Paris en hiver (UTC+1) et ~9h-20h en ete (UTC+2). Le passage
+    # Une seule mise a jour par jour, le matin, lundi -> vendredi.
+    # ATTENTION : le cron GitHub est en UTC. "0 5 * * 1-5" correspond a
+    # 7h Paris en ete (UTC+2) et 6h Paris en hiver (UTC+1). Le passage
     # heure d'hiver/ete n'est PAS gere par le cron (decalage assume).
-    - cron: "0 7-18 * * 1-5"
+    # La periode d'exploitation (cf. CUTOFF) etant en ete, on vise 7h pile.
+    - cron: "0 5 * * 1-5"
   workflow_dispatch:
   push:
     branches: [main]

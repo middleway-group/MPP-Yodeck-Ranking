@@ -84,15 +84,18 @@ ${metaRefresh}
   .p-block{width:100%;border-radius:.6vh .6vh 0 0;display:flex;align-items:center;justify-content:center}
   .p-num{font-size:6.4vh;font-weight:900;line-height:1}
   .ground{height:.6vh;border-radius:0 0 3px 3px;background:var(--navy-2);margin:0 auto;width:78%}
+  /* Marches a ecart visuel CONSTANT (100/75/50%) : la hauteur represente le
+     rang, pas le nombre de points. Les ecarts de points sont souvent minimes
+     (ex: 1250/1248/1245) ; une echelle proportionnelle ecraserait le podium. */
   .s1{order:2}.s2{order:1}.s3{order:3}
   .s1 .p-icon,.s1 .p-score{color:var(--coral)}
   .s1 .p-block{height:100%;background:#180610;border-top:2px solid var(--coral);border-left:2px solid var(--coral);border-right:2px solid var(--coral)}
   .s1 .p-num{color:var(--coral)}
   .s2 .p-icon,.s2 .p-score{color:var(--cyan)}
-  .s2 .p-block{height:66%;background:#0b1565;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan);border-right:1px solid var(--cyan)}
+  .s2 .p-block{height:75%;background:#0b1565;border-top:1px solid var(--cyan);border-left:1px solid var(--cyan);border-right:1px solid var(--cyan)}
   .s2 .p-num{color:var(--cyan)}
   .s3 .p-icon,.s3 .p-score{color:var(--green)}
-  .s3 .p-block{height:42%;background:#081812;border-top:1px solid var(--green);border-left:1px solid var(--green);border-right:1px solid var(--green)}
+  .s3 .p-block{height:50%;background:#081812;border-top:1px solid var(--green);border-left:1px solid var(--green);border-right:1px solid var(--green)}
   .s3 .p-num{color:var(--green)}
 
   /* === HALL OF FLAME === */
